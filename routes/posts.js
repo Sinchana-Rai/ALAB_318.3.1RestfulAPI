@@ -2,11 +2,22 @@ const express = require("express");
 const router = express.Router();
 
 const posts = require("../data/posts");
+const users = require("../data/users");
 const error = require("../utilities/error");
 
+//GET /api/posts?userId=<VALUE>
+// Retrieves all posts by a user with the specified postId.
+// It is common for APIs to have multiple endpoints that accomplish the same task. This route uses a "userId" query parameter to filter posts, while the one above uses a route parameter.
 router
   .route("/")
-  .get((req, res) => {
+  .get((req, res, next) => {
+    if (req.query.userId){
+      const userId = Number(req.query.userId); 
+
+      const userPosts = posts.filter((p) => p.userId == userId); 
+
+      return res.json({userId: userId, posts: userPosts})
+    }
     const links = [
       {
         href: "posts/:id",
@@ -14,10 +25,8 @@ router
         type: "GET",
       },
     ];
-
     res.json({ posts, links });
   })
-
   
   .post((req, res, next) => {
     if (req.body.userId && req.body.title && req.body.content) {
@@ -78,5 +87,20 @@ router
     if (post) res.json(post);
     else next();
   });
+
+  router
+  .route("/:id/comments")
+  .get((req, res, next) => {
+    if (req.query.userId){
+      const userId = Number(req.query.userId);
+      const userComments = comments.filter((c) => c.userId == userId); 
+      res.json({userId: userId, comments: userComments}); 
+
+      if (isNaN(userId)) return next(error(400, "Invalid user ID"))
+    } 
+    const id = Number(req.params.id);
+    const userComments = comments.filter((c) => c.id == id); 
+    res.json({id: id, comments: userComments});
+});
 
 module.exports = router;

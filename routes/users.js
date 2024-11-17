@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 
 const users = require("../data/users");
+const posts = require("../data/posts");
+const comments = require("../data/comments")
 const error = require("../utilities/error");
 
 router
@@ -35,6 +37,23 @@ router
     } else next(error(400, "Insufficient Data"));
   });
 
+  // GET /api/users/:id/posts
+// Retrieves all posts by a user with the specified id.
+  router
+  .route("/:id/posts")
+  .get((req, res, next) => {
+  const userId = Number(req.params.id); 
+
+  const user = users.find((u) => u.id == userId);
+  if (!user) return next(error(404, "user not found"))
+  
+  const userPosts = posts.filter((post) => post.userId == userId);
+  res.json({
+    user: {id: user.id, name: user.name, username: user.username},
+    posts: userPosts
+  })
+})
+
 
 router
   .route("/:id")
@@ -57,7 +76,6 @@ router
     if (user) res.json({ user, links });
     else next();
   })
-
 
 
   .patch((req, res, next) => {
@@ -86,19 +104,19 @@ router
   });
 
   router
-  .route("/:id/posts")
+  .route("/:id/comments")
   .get((req, res, next) => {
-  const userId = Number(req.params.id); 
+    if (req.query.postId){
+      const postId = Number(req.query.postId); 
+      const userComments = comments.filter((c) => c.postId == postId); 
+      res.json({postId: postId, comments: userComments}); 
 
-  const user = users.find((u) => u.id === userId);
-  if (!user) return next(error(404, "user not found"))
-  
-  const userPosts = posts.filter((post) => post.userId === userId);
-  res.json({
-    user: {id: user.id, name: user.name, username: user.username},
-    posts: userPosts
-  })
-})
+      if (isNaN(postId)) return next(error(400, "Invalid post ID"))
+    } 
+    const id = Number(req.params.id); 
+    const userComments = comments.filter((c) => c.id == id); 
+    res.json({id: id, comments: userComments});
+  }); 
 
 
 
